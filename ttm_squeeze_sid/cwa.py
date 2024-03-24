@@ -1,5 +1,5 @@
 import os, pandas
-
+import ta
 dataframes = {}
 buy_symbols = []
 sell_symbols = []
@@ -22,24 +22,29 @@ for filename in os.listdir('datasets'):
     weeks_closing_data = df.groupby('year_week').tail(1)
     #weeks_closing_data = df.groupby(df['date'].dt.isocalendar().week).tail(1)
 
-    #print(weeks_closing_data)
     df = weeks_closing_data
     #df.to_csv('datasets_weekly/{}.csv'.format(symbol))
 
-    df['50sma'] = df['close'].rolling(window=50).mean()
-    df['stddev'] = df['close'].rolling(window=50).std()
-    df['lower_band'] = df['50sma'] - (2 * df['stddev'])
-    df['upper_band'] = df['50sma'] + (2 * df['stddev'])
+    #df['50sma'] = df['close'].rolling(window=50).mean()
+    #df['stddev'] = df['close'].rolling(window=50).std()
+    #df['lower_band'] = df['50sma'] - (3 * df['stddev'])
+    #df['upper_band'] = df['50sma'] + (3 * df['stddev'])
+
+    bollinger_bands = ta.volatility.BollingerBands(df['close'], window=50, window_dev=3)
+    df['bb_upper'] = bollinger_bands.bollinger_hband()
+    df['bb_lower'] = bollinger_bands.bollinger_lband()
 
     df['TR'] = abs(df['high'] - df['low'])
     df['ATR'] = df['TR'].rolling(window=14).mean()
 
     df['ATR1.8'] = (df['ATR'] * 1.8)
 
-    if (df.iloc[-2]['close'] < df.iloc[-2]['upper_band']) and (df.iloc[-1]['close'] > df.iloc[-1]['upper_band']):
+    if (df.iloc[-2]['close'] < df.iloc[-2]['bb_upper']) and (df.iloc[-1]['close'] > df.iloc[-1]['bb_upper']):
         #print(df.iloc[-2]['close'], df.iloc[-2]['upper_band'], df.iloc[-1]['close'],  df.iloc[-1]['upper_band'])
         #print(symbol)
         buy_symbols.append(symbol)
+
+    if symbol == "INFIBEAM": print(df)
 
     #if(df.iloc[-2]['close'] > df.iloc[-2]['ATR1.8']) and (df.iloc[-1]['close'] < df.iloc[-1]['ATR1.8']):
         #sell_symbols.append(symbol)
